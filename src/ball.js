@@ -11,20 +11,11 @@ export class Ball {
       this.color = color;
     }
 
-    update_v_if_reflected() {
-        const x_check = (Math.abs(this.pos.x) > constraints.CONTAINER_LENGTH/2 - this.r)? -1:1;
-        const y_check = (Math.abs(this.pos.y) > constraints.CONTAINER_WIDTH/2 - this.r)? -1:1;
-        const z_check = (Math.abs(this.pos.z) > constraints.CONTAINER_HEIGHT/2 - this.r)? -1:1;
-
-        this.v.x *= x_check;
-        this.v.y *= y_check;
-        this.v.z *= z_check;
-    }    
-
+    
     update_v_by_acceleration() {
         this.v.y += this.a*constraints.T;
     }
-
+    
     update_pos() {
         this.pos.x += this.v.x*constraints.T;
         this.pos.y += this.v.y*constraints.T;
@@ -32,4 +23,33 @@ export class Ball {
         
         this.item.position.set(this.pos.x, this.pos.y, this.pos.z);
     }
+
+    update_v_if_reflected() {
+        // touch the wall
+        const x_dis = constraints.CONTAINER_LENGTH/2 - Math.abs(this.pos.x);
+        const y_dis = constraints.CONTAINER_WIDTH/2 - Math.abs(this.pos.y)
+        const z_dis = constraints.CONTAINER_HEIGHT/2 - Math.abs(this.pos.z);
+
+        if (x_dis < this.r) {
+            this.v.x *= -1;
+            if (x_dis < 0) {
+                this.pos.x -= Math.sign(this.pos.x)*x_dis;
+            }
+        }
+        
+        if (y_dis < this.r) {
+            this.v.y *= -1;
+            if (y_dis < 0) {
+                this.pos.y -= Math.sign(this.pos.y)*y_dis;
+            }
+        }
+        
+        if (z_dis < this.r) {
+            this.v.z *= -1;
+            if (z_dis < 0) {
+                this.pos.z -= Math.sign(this.pos.z)*z_dis;
+            }
+        }
+    }    
+
 }

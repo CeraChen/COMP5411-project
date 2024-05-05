@@ -58,9 +58,14 @@ var runBtn = document.getElementById("run");
 
 setBtn.onclick = function() {
     hasInitialized = !hasInitialized;
+    runBtn.disabled = !hasInitialized;
+    setBtn.textContent = (hasInitialized)? "Reset" : "Set";
 };
+
 runBtn.onclick = function() {
     isSimulating = !isSimulating;
+    setBtn.disabled = isSimulating;
+    runBtn.textContent = (isSimulating)? "Pause" : "Run";
 };
 
 function createGUI() {
@@ -187,8 +192,8 @@ function mainLoop() {
             // update ball motion 
             var mBallSimulatedList = mBall1List.concat(mBall2List, mBall3List); 
             for (var i=0; i<mBallSimulatedList.length; i++) {
-                mBallSimulatedList[i].update_v_if_reflected();
                 mBallSimulatedList[i].update_v_by_acceleration();
+                mBallSimulatedList[i].update_v_if_reflected();
                 mBallSimulatedList[i].update_pos();
             }
 
