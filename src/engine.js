@@ -49,6 +49,8 @@ var controls = new function(){
         this.posUpdateQueue = [];
     };
 
+    this.mergeProb = constraints.MERGING_PROB;
+
 
     // lighting
     this.lightingUpdated = true;
@@ -135,6 +137,8 @@ function createGUI() {
     const gui = new dat.gui.GUI();
     const initialization = gui.addFolder('Balls properties'); // support adding up to three different balls
     const lighting = gui.addFolder('Light properties');
+
+    initialization.add(controls, "mergeProb", 0, 1).name("Merging probability");
 
     const ball1 = initialization.addFolder("Ball 1");
     ball1.add(controls, "ball1Num", 0, 100).step(1).name("Quantity").onChange(function() {
@@ -345,7 +349,7 @@ function mainLoop() {
             if (isDirty) { 
                 for (var i=0; i<mMergeGroupList.length; i++) {
                     var dice = Math.random();
-                    if (dice < constraints.MERGING_PROB || mMergeGroupList[i].length > 2) {  
+                    if (dice < controls.mergeProb || mMergeGroupList[i].length > 2) {  
                         mergeCnt += 1;
                         mergeCounter.textContent = String(mergeCnt);                       
                         ratioCounter.textContent = String((mergeCnt/(bounceCnt+mergeCnt)).toFixed(3));
