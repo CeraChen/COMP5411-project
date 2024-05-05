@@ -82,6 +82,14 @@ var controls = new function(){
         this.specularChanged = false;        
         this.shininessChanged = false;
     };
+    
+    this.toUpdatePhongModel = function() {
+        this.lightingModelChanged = true;
+        this.ambientChanged = true;
+        this.diffuseChanged = true;
+        this.specularChanged = true;        
+        this.shininessChanged = true;
+    };
 }
 
 
@@ -240,11 +248,11 @@ var mPointLight = new THREE.PointLight(0xffffff, 1);
 mPointLight.position.set(0.8*constraints.CONTAINER_LENGTH, 0.8*constraints.CONTAINER_WIDTH, 0.8*constraints.CONTAINER_HEIGHT);
 scene.add(mPointLight);
 
-var sphereGeometry = new THREE.SphereGeometry(3, constraints.BALL_SEGMENTS, constraints.BALL_SEGMENTS); // 设置球体的半径和分段数
-var sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
-var lightSphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-lightSphere.position.copy(mPointLight.position); // 设置球体的位置与点光源一致
-scene.add(lightSphere);
+var lightGeometry = new THREE.BoxGeometry(2, 2, 2);
+var lightMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+var lightCube = new THREE.Mesh(lightGeometry, lightMaterial);
+lightCube.position.copy(mPointLight.position);
+scene.add(lightCube);
 
 var geometry = new THREE.BoxGeometry(constraints.CONTAINER_LENGTH, constraints.CONTAINER_WIDTH, constraints.CONTAINER_HEIGHT);
 var material = new THREE.MeshPhongMaterial({ color: 0xffffff, transparent: true, opacity: 0.2 });
@@ -438,13 +446,15 @@ function mainLoop() {
                     }
                 }
             }
-            controls.hasUpdatedBallProps();
+            controls.hasUpdatedBallProps();            
+            controls.toUpdatePhongModel();
         }
     }
 
     if (!controls.lightingUpdated) {
         mPointLight.color = new THREE.Color(rgb2hex(controls.pointLightColor));
         mPointLight.intensity = controls.pointLightIntensity;
+        lightCube.material.color.set(rgb2hex(controls.pointLightColor));
 
         mAmbientLight.color = new THREE.Color(rgb2hex(controls.ambientLightColor)); // 设置点光源的颜色为红色
         // mAmbientLight.intensity = controls.ambientLightIntensity;
@@ -509,7 +519,7 @@ function updateLighting() {
         // }
 
         if (controls.diffuseChanged) {
-            var diffuseColor = [mBallColor[idx][0]*controls.diffuseScaler, mBallColor[idx][1]*controls.diffuseScaler, mBallColor[idx][2]*controls.diffuseScaler];
+            var diffuseColor = [mBallList[i].color[0]*controls.diffuseScaler, mBallList[i].color[1]*controls.diffuseScaler, mBallList[i].color[2]*controls.diffuseScaler];
             mBallList[i].item.material.color.set(rgb2hex(diffuseColor));  
         }
         
@@ -521,6 +531,20 @@ function updateLighting() {
         if (controls.shininessChanged) {
             mBallList[i].item.material.shininess = controls.shininessScaler;  
         }
+    }
+
+    if (controls.diffuseChanged) {
+        var diffuseColor = [255*controls.diffuseScaler, 255*controls.diffuseScaler, 255*controls.diffuseScaler];
+        cube.material.color.set(rgb2hex(diffuseColor));  
+    }
+    
+    if (controls.specularChanged) {
+        var specularColor = [controls.pointLightColor[0]*controls.specularScaler, controls.pointLightColor[1]*controls.specularScaler, controls.pointLightColor[2]*controls.specularScaler];
+        cube.material.specular.set(rgb2hex(specularColor));  
+    }
+
+    if (controls.shininessChanged) {
+        cube.material.shininess = controls.shininessScaler;  
     }
 }
 
