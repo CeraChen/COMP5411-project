@@ -1,4 +1,7 @@
-import { Ball } from './ball.js';
+import { Ball } from "./ball.js";
+import * as constraints from "./constraints.js";
+
+
 
 // GUI 
 var controls = new function(){
@@ -14,19 +17,18 @@ var controls = new function(){
 
     this.ball1Num = 0;
     this.ball1Radius = 1;
-    this.ball1Mass = 0;
+    this.ball1Density = 1;
     this.ball1Color = [255, 255, 255];
     
     this.ball2Num = 0;
     this.ball2Radius = 1;
-    this.ball2Mass = 0;
+    this.ball2Density = 1;
     this.ball2Color = [255, 255, 255];
 
     this.ball3Num = 0;
     this.ball3Radius = 1;
-    this.ball3Mass = 0;
+    this.ball3Density = 1;
     this.ball3Color = [255, 255, 255];
-
 
 
     this.updateInitializationStatus = function() {
@@ -36,27 +38,31 @@ var controls = new function(){
             this.simulatorStatus = "stop";
             this.isSimulating = false;
         }
-    }
+    };
 
     this.updateSimulatorStatus = function() {
         this.isSimulating = !this.isSimulating;
-    }
+    };
     
     this.toUpdateBallPos = function(idx) {
         this.hasUpdated = false;
         this.posUpdateQueue.push(idx);
-    }
+    };
     
     this.toUpdateBallColor = function(idx) {
         this.hasUpdated = false;
         this.colorUpdateQueue.push(idx);
-    }
+    };
+
+    this.toUpdateBallDensity = function() {
+        this.hasUpdated = false;
+    };
 
     this.hasUpdatedBallProps = function() {
         this.hasUpdated = true;
         this.colorUpdateQueue = [];
         this.posUpdateQueue = [];
-    }
+    };
 }
 
 function createGUI() {
@@ -67,38 +73,38 @@ function createGUI() {
     const ball1 = initialization.addFolder("Ball 1");
     ball1.add(controls, "ball1Num", 0, 100).step(1).name("Quantity").onChange(function() {
         controls.toUpdateBallPos(1);
-      });
+    });
     ball1.add(controls, "ball1Radius", 0.1, 5.0).step(0.1).name("Radius").onChange(function() {
         controls.toUpdateBallPos(1);
-      });
-    ball1.add(controls, "ball1Mass").name("Mass");
+    });
+    ball1.add(controls, "ball1Density").name("Density").onChange(controls.toUpdateBallDensity);
     ball1.addColor(controls, "ball1Color").name("Color").onChange(function() {
         controls.toUpdateBallColor(1);
-      });
+    });
 
     const ball2 = initialization.addFolder("Ball 2");
     ball2.add(controls, "ball2Num", 0, 100).step(1).step(1).name("Quantity").onChange(function() {
         controls.toUpdateBallPos(2);
-      });
+    });
     ball2.add(controls, "ball2Radius", 0.1, 5.0).step(0.1).name("Radius").onChange(function() {
         controls.toUpdateBallPos(2);
-      });
-    ball2.add(controls, "ball2Mass").name("Mass");
+    });
+    ball2.add(controls, "ball2Density").name("Density").onChange(controls.toUpdateBallDensity);
     ball2.addColor(controls, "ball2Color").name("Color").onChange(function() {
         controls.toUpdateBallColor(2);
-      });
+    });
 
     const ball3 = initialization.addFolder("Ball 3");
     ball3.add(controls, "ball3Num", 0, 100).step(1).step(1).name("Quantity").onChange(function() {
         controls.toUpdateBallPos(3);
-      });
+    });
     ball3.add(controls, "ball3Radius", 0.1, 5.0).step(0.1).name("Radius").onChange(function() {
         controls.toUpdateBallPos(3);
-      });
-    ball3.add(controls, "ball3Mass").name("Mass");
+    });
+    ball3.add(controls, "ball3Density").name("Density").onChange(controls.toUpdateBallDensity);
     ball3.addColor(controls, "ball3Color").name("Color").onChange(function() {
         controls.toUpdateBallColor(3);
-      });
+    });
 
     const onInitialized = function() {
         controls.updateInitializationStatus();
@@ -124,8 +130,10 @@ createGUI();
 var container = document.getElementById("container");
 var scene = new THREE.Scene();
 
-var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.z = 100;
+var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1e-2, 1000);
+camera.position.x = constraints.CONTAINER_LENGTH*1.5;
+camera.position.y = 0;
+camera.position.z = 0;
 
 const cameraControls = new THREE.OrbitControls(camera, container);
 cameraControls.enableZoom = true;
@@ -146,47 +154,43 @@ container.appendChild(renderer.domElement);
 
 
 
-// setting
-const CONTAINER_LENGTH = 100;
-const CONTAINER_WIDTH = 100;
-const CONTAINER_HEIGHT = 100;
-
-const BALL_SEGMENTS = 36;
-const MAX_VELOCITY = 50;
-
+// items
 var mBall1List = [];
 var mBall2List = [];
 var mBall3List = [];
-var mBallList = [mBall1List, mBall2List, mBall3List];
 
 
 // mainLoop
 function mainLoop() {
     requestAnimationFrame(mainLoop);
-
-    var mBallNum = [controls.ball1Num, controls.ball2Num, controls.ball3Num];
-    var mBallRadius = [controls.ball1Radius, controls.ball2Radius, controls.ball3Radius];
-    var mBallColor = [controls.ball1Color, controls.ball2Color, controls.ball3Color];
-    // [colorScaler(controls.ball1Color), colorScaler(controls.ball2Color), colorScaler(controls.ball3Color)];
-    // [controls.ball1Color, controls.ball2Color, controls.ball3Color];
-
     if (controls.hasInitialized) {
         if (controls.isSimulating) {
-            // update ball motion
+            // update ball motion 
+            var mBallSimulatedList = mBall1List.concat(mBall2List, mBall3List); 
+            for (var i=0; i<mBallSimulatedList.length; i++) {
+                mBallSimulatedList[i].updateVelocity();
+            }
+
 
         }
     }
-    else {
-        if (!controls.hasUpdated) {
-            // update ball props
+    else {   
+        if (!controls.hasUpdated) {  
+            // update ball props           
+            var mBallInitialList = [mBall1List, mBall2List, mBall3List];    
+            var mBallNum = [controls.ball1Num, controls.ball2Num, controls.ball3Num];
+            var mBallRadius = [controls.ball1Radius, controls.ball2Radius, controls.ball3Radius];
+            var mBallColor = [controls.ball1Color, controls.ball2Color, controls.ball3Color];
+            var mBallDensity = [controls.ball1Density, controls.ball2Density, controls.ball3Density];
+
             if (controls.posUpdateQueue.length > 0) {
                 for (var idx = 0; idx < 3; idx++) {
                     if (controls.posUpdateQueue.includes(idx+1)) {
-                        removeBalls(mBallList[idx]);
-                        mBallList[idx].length = 0;
+                        removeBalls(mBallInitialList[idx]);
+                        mBallInitialList[idx].length = 0;
 
                         for (var i=0; i<mBallNum[idx]; i++) {
-                            const geometry = new THREE.SphereGeometry(mBallRadius[idx], BALL_SEGMENTS, BALL_SEGMENTS);
+                            const geometry = new THREE.SphereGeometry(mBallRadius[idx], constraints.BALL_SEGMENTS, constraints.BALL_SEGMENTS);
                             const material = new THREE.MeshBasicMaterial({ color: rgb2hex(mBallColor[idx])}); 
                             console.log(mBallColor[idx]);
                             const item = new THREE.Mesh(geometry, material);
@@ -195,18 +199,31 @@ function mainLoop() {
                             item.position.set(position.x, position.y, position.z);
                             scene.add(item);
 
-                            const ball = new Ball(item, Math.random()*MAX_VELOCITY, position);
-                            mBallList[idx].push(ball);
+                            const velocity = randomV();
+
+                            const ball = new Ball(item, position, velocity, mBallRadius[idx], mBallDensity[idx], mBallColor[idx]);
+                            mBallInitialList[idx].push(ball);
                         }
                         
                     }
                 }
             }
             else {
-                for (var idx = 0; idx < 3; idx++) {
-                    if (controls.colorUpdateQueue.includes(idx+1)) {
-                        for (var i=0; i<mBallList[idx].length; i++) {
-                            mBallList[idx][i].item.material.color.set(rgb2hex(mBallColor[idx]));
+                if (controls.colorUpdateQueue.length > 0) {                    
+                    for (var idx = 0; idx < 3; idx++) {
+                        if (controls.colorUpdateQueue.includes(idx+1)) {
+                            for (var i=0; i<mBallInitialList[idx].length; i++) {
+                                mBallInitialList[idx][i].item.material.color.set(rgb2hex(mBallColor[idx]));
+                            }
+                        }
+                    }
+                }
+                else {
+                    for (var idx = 0; idx < 3; idx++) {
+                        if (mBallNum[idx] > 0) {
+                            for (var i=0; i<mBallInitialList[idx].length; i++) {
+                                mBallInitialList[idx][i].m = mBallDensity[idx];
+                            }
                         }
                     }
                 }
@@ -224,13 +241,17 @@ function removeBalls(ballList) {
 }
 
 function randomPos(radius) {
-    const x = Math.random() * (CONTAINER_LENGTH - radius);
-    //  - (CONTAINER_LENGTH * 2 - radius);
-    const y = Math.random() * (CONTAINER_WIDTH - radius);
-    //  - (CONTAINER_WIDTH * 2 - radius);
-    const z = Math.random() * (CONTAINER_HEIGHT - radius);
-    //  - (CONTAINER_HEIGHT * 2 - radius);
+    const x = Math.random() * (constraints.CONTAINER_LENGTH - 2*radius) - (constraints.CONTAINER_LENGTH / 2 - radius);
+    const y = Math.random() * (constraints.CONTAINER_WIDTH - 2*radius) - (constraints.CONTAINER_WIDTH / 2 - radius);
+    const z = Math.random() * (constraints.CONTAINER_HEIGHT - 2*radius) - (constraints.CONTAINER_HEIGHT / 2 - radius);
     return { x, y, z };
+}
+
+function randomV() {
+    const v_x = Math.random()*constraints.MAX_VELOCITY;
+    const v_y = Math.random()*constraints.MAX_VELOCITY;
+    const v_z = Math.random()*constraints.MAX_VELOCITY;
+    return {v_x, v_y, v_z};
 }
 
 function colorScaler(rgb) {
@@ -250,39 +271,3 @@ function rgb2hex(rgb) {
 }
 
 mainLoop();
-
-// import * as THREE from 'three';
-// 创建场景
-// var scene = new THREE.Scene();
-
-// // 创建相机
-// var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-// camera.position.z = 5;
-
-// var light = new THREE.DirectionalLight( 0xffffff, 0.8 );
-// scene.add( light );
-
-// // 创建渲染器
-// var container = document.getElementById( 'container' );
-// var renderer = new THREE.WebGLRenderer();
-// renderer.setPixelRatio( window.devicePixelRatio );
-// renderer.setSize(window.innerWidth, window.innerHeight);
-// container.appendChild(renderer.domElement);
-
-// // 创建球体
-// var geometry = new THREE.SphereGeometry(1, 32, 32);
-// var material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-// var sphere = new THREE.Mesh(geometry, material);
-
-// // 将球体添加到场景中
-// scene.add(sphere);
-
-// // 渲染循环
-// function animate() {
-//     requestAnimationFrame(animate);
-//     sphere.rotation.x += 0.01;
-//     sphere.rotation.y += 0.01;
-//     renderer.render(scene, camera);
-// }
-
-// animate();
