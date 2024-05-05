@@ -260,6 +260,14 @@ var cube = new THREE.Mesh(geometry, material);
 cube.position.set(0, 0, 0);
 scene.add(cube);
 
+
+var planeGeometry = new THREE.PlaneGeometry(3*constraints.CONTAINER_LENGTH, 3*constraints.CONTAINER_HEIGHT);
+var planeMaterial = new THREE.MeshBasicMaterial({ color: 0x606060, side: THREE.DoubleSide });
+var planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
+planeMesh.position.set(0, -constraints.CONTAINER_WIDTH/2, 0);
+planeMesh.rotation.x = Math.PI * -0.5;
+scene.add(planeMesh);
+
 var renderer = new THREE.WebGLRenderer();
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
