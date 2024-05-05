@@ -12,8 +12,8 @@ var controls = new function(){
     this.hasInitialized = false;
     this.initializationStatus = "no";
     
-    this.isSimulating = false; // enable only after initialization, set true when balls start to move
-    this.simulatorStatus = "stop";
+    this.isSimulating = true; // enable only after initialization, set true when balls start to move
+    this.simulatorStatus = "start";
 
     this.ball1Num = 0;
     this.ball1Radius = 1;
@@ -33,15 +33,21 @@ var controls = new function(){
 
     this.updateInitializationStatus = function() {
         this.hasInitialized = !this.hasInitialized;
+        console.log("updateInitializationStatus");
+        console.log(this.hasInitialized);
 
         if (!this.hasInitialized) {
             this.simulatorStatus = "stop";
             this.isSimulating = false;
+            console.log("stopSimulator");
+            console.log(this.isSimulating);
         }
     };
 
     this.updateSimulatorStatus = function() {
         this.isSimulating = !this.isSimulating;
+        console.log("updateSimulatorStatus");
+        console.log(this.isSimulating);
     };
     
     this.toUpdateBallPos = function(idx) {
@@ -118,7 +124,6 @@ function createGUI() {
         }
     }
     initialization.add(controls, "initializationStatus", ["yes", "no"]).name("Confirm").onChange(onInitialized);
-
     simulation.add(controls, "simulatorStatus", ["stop", "start"]).name("Simulator").onChange(controls.updateSimulatorStatus);
 
 }
@@ -164,17 +169,21 @@ var mBall3List = [];
 function mainLoop() {
     requestAnimationFrame(mainLoop);
     if (controls.hasInitialized) {
+        // console.log("has initialized, controls.isSimulating", controls.isSimulating);
         if (controls.isSimulating) {
+            // console.log("is simulating");
             // update ball motion 
             var mBallSimulatedList = mBall1List.concat(mBall2List, mBall3List); 
             for (var i=0; i<mBallSimulatedList.length; i++) {
-                mBallSimulatedList[i].updateVelocity();
+                mBallSimulatedList[i].update_v_if_reflected();
+                mBallSimulatedList[i].update_v_by_acceleration();
+                mBallSimulatedList[i].update_pos();
             }
-
 
         }
     }
     else {   
+        console.log("hasn't initialized");
         if (!controls.hasUpdated) {  
             // update ball props           
             var mBallInitialList = [mBall1List, mBall2List, mBall3List];    
@@ -192,7 +201,6 @@ function mainLoop() {
                         for (var i=0; i<mBallNum[idx]; i++) {
                             const geometry = new THREE.SphereGeometry(mBallRadius[idx], constraints.BALL_SEGMENTS, constraints.BALL_SEGMENTS);
                             const material = new THREE.MeshBasicMaterial({ color: rgb2hex(mBallColor[idx])}); 
-                            console.log(mBallColor[idx]);
                             const item = new THREE.Mesh(geometry, material);
 
                             const position = randomPos(mBallRadius[idx]);
@@ -248,10 +256,10 @@ function randomPos(radius) {
 }
 
 function randomV() {
-    const v_x = Math.random()*constraints.MAX_VELOCITY;
-    const v_y = Math.random()*constraints.MAX_VELOCITY;
-    const v_z = Math.random()*constraints.MAX_VELOCITY;
-    return {v_x, v_y, v_z};
+    const x = Math.random()*constraints.MAX_VELOCITY;
+    const y = Math.random()*constraints.MAX_VELOCITY;
+    const z = Math.random()*constraints.MAX_VELOCITY;
+    return { x, y, z };
 }
 
 function colorScaler(rgb) {
