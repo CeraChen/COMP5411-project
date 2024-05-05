@@ -128,7 +128,7 @@ var container = document.getElementById("container");
 var scene = new THREE.Scene();
 
 var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1e-2, 1000);
-camera.position.x = constraints.CONTAINER_LENGTH*1.5;
+camera.position.x = constraints.CONTAINER_LENGTH*2;
 camera.position.y = 0;
 camera.position.z = 0;
 
@@ -141,11 +141,19 @@ cameraControls.zoomSpeed = 1.0;
 cameraControls.panSpeed = 0.8;
 cameraControls.target.set(0, 0, 0);
 
-var light = new THREE.DirectionalLight( 0xffffff, 1.0 );
-scene.add( light );
+var directlight = new THREE.DirectionalLight(0xffffff, 200);
+scene.add(directlight);
 
-var geometry = new THREE.BoxGeometry(2*constraints.CONTAINER_LENGTH, 2*constraints.CONTAINER_WIDTH, 2*constraints.CONTAINER_HEIGHT);
-var material = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.1 });
+var ambientLight = new THREE.AmbientLight(0xffffff, 100);
+scene.add(ambientLight);
+
+var pointLight = new THREE.PointLight(0xffffff);
+pointLight.position.set(-2*constraints.CONTAINER_LENGTH, -2*constraints.CONTAINER_WIDTH, 2*constraints.CONTAINER_HEIGHT);
+pointLight.intensity = 1000;
+scene.add(pointLight);
+
+var geometry = new THREE.BoxGeometry(constraints.CONTAINER_LENGTH, constraints.CONTAINER_WIDTH, constraints.CONTAINER_HEIGHT);
+var material = new THREE.MeshPhongMaterial({ color: 0xaa3366, transparent: true, opacity: 0.1 });
 var cube = new THREE.Mesh(geometry, material);
 cube.position.set(0, 0, 0);
 scene.add(cube);
@@ -198,7 +206,7 @@ function mainLoop() {
 
                         for (var i=0; i<mBallNum[idx]; i++) {
                             const geometry = new THREE.SphereGeometry(mBallRadius[idx], constraints.BALL_SEGMENTS, constraints.BALL_SEGMENTS);
-                            const material = new THREE.MeshBasicMaterial({ color: rgb2hex(mBallColor[idx])}); 
+                            const material = new THREE.MeshPhongMaterial({ color: rgb2hex(mBallColor[idx])}); 
                             const item = new THREE.Mesh(geometry, material);
 
                             const position = randomPos(mBallRadius[idx]);

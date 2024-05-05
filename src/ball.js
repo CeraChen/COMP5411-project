@@ -12,9 +12,9 @@ export class Ball {
     }
 
     update_v_if_reflected() {
-        const x_check = (Math.abs(this.pos.x) > constraints.CONTAINER_LENGTH - this.r)? -1:1;
-        const y_check = (Math.abs(this.pos.y) > constraints.CONTAINER_WIDTH - this.r)? -1:1;
-        const z_check = (Math.abs(this.pos.z) > constraints.CONTAINER_HEIGHT - this.r)? -1:1;
+        const x_check = (Math.abs(this.pos.x) > constraints.CONTAINER_LENGTH/2 - this.r)? -1:1;
+        const y_check = (Math.abs(this.pos.y) > constraints.CONTAINER_WIDTH/2 - this.r)? -1:1;
+        const z_check = (Math.abs(this.pos.z) > constraints.CONTAINER_HEIGHT/2 - this.r)? -1:1;
 
         this.v.x *= x_check;
         this.v.y *= y_check;
