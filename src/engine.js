@@ -9,11 +9,8 @@ var controls = new function(){
     this.colorUpdateQueue = [];
     this.posUpdateQueue = [];
 
-    this.hasInitialized = false;
-    this.initializationStatus = "no";
-    
-    this.isSimulating = true; // enable only after initialization, set true when balls start to move
-    this.simulatorStatus = "start";
+    // this.initializationStatus = "no";
+    // this.simulatorStatus = "start";
 
     this.ball1Num = 0;
     this.ball1Radius = 1;
@@ -31,25 +28,6 @@ var controls = new function(){
     this.ball3Color = [255, 255, 255];
 
 
-    this.updateInitializationStatus = function() {
-        this.hasInitialized = !this.hasInitialized;
-        console.log("updateInitializationStatus");
-        console.log(this.hasInitialized);
-
-        if (!this.hasInitialized) {
-            this.simulatorStatus = "stop";
-            this.isSimulating = false;
-            console.log("stopSimulator");
-            console.log(this.isSimulating);
-        }
-    };
-
-    this.updateSimulatorStatus = function() {
-        this.isSimulating = !this.isSimulating;
-        console.log("updateSimulatorStatus");
-        console.log(this.isSimulating);
-    };
-    
     this.toUpdateBallPos = function(idx) {
         this.hasUpdated = false;
         this.posUpdateQueue.push(idx);
@@ -70,6 +48,20 @@ var controls = new function(){
         this.posUpdateQueue = [];
     };
 }
+
+
+var hasInitialized = false;
+var isSimulating = false; // enable only after initialization, set true when balls start to move
+
+var setBtn = document.getElementById("set");
+var runBtn = document.getElementById("run");
+
+setBtn.onclick = function() {
+    hasInitialized = !hasInitialized;
+};
+runBtn.onclick = function() {
+    isSimulating = !isSimulating;
+};
 
 function createGUI() {
     const gui = new dat.gui.GUI();
@@ -112,19 +104,19 @@ function createGUI() {
         controls.toUpdateBallColor(3);
     });
 
-    const onInitialized = function() {
-        controls.updateInitializationStatus();
-        if (controls.hasInitialized) {
-            initialization.close();
-            simulation.open();
-        }
-        else {            
-            initialization.open();
-            simulation.close();
-        }
-    }
-    initialization.add(controls, "initializationStatus", ["yes", "no"]).name("Confirm").onChange(onInitialized);
-    simulation.add(controls, "simulatorStatus", ["stop", "start"]).name("Simulator").onChange(controls.updateSimulatorStatus);
+    // const onInitialized = function() {
+    //     // controls.updateInitializationStatus();
+    //     if (hasInitialized) {
+    //         initialization.close();
+    //         simulation.open();
+    //     }
+    //     else {            
+    //         initialization.open();
+    //         simulation.close();
+    //     }
+    // }
+    // initialization.add(controls, "initializationStatus", ["yes", "no"]).name("Confirm").onChange(onInitialized);
+    // simulation.add(controls, "simulatorStatus", ["stop", "start"]).name("Simulator");//.onChange(controls.updateSimulatorStatus);
 
 }
 createGUI();
@@ -152,6 +144,12 @@ cameraControls.target.set(0, 0, 0);
 var light = new THREE.DirectionalLight( 0xffffff, 1.0 );
 scene.add( light );
 
+var geometry = new THREE.BoxGeometry(2*constraints.CONTAINER_LENGTH, 2*constraints.CONTAINER_WIDTH, 2*constraints.CONTAINER_HEIGHT);
+var material = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.1 });
+var cube = new THREE.Mesh(geometry, material);
+cube.position.set(0, 0, 0);
+scene.add(cube);
+
 var renderer = new THREE.WebGLRenderer();
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -168,9 +166,9 @@ var mBall3List = [];
 // mainLoop
 function mainLoop() {
     requestAnimationFrame(mainLoop);
-    if (controls.hasInitialized) {
+    if (hasInitialized) {
         // console.log("has initialized, controls.isSimulating", controls.isSimulating);
-        if (controls.isSimulating) {
+        if (isSimulating) {
             // console.log("is simulating");
             // update ball motion 
             var mBallSimulatedList = mBall1List.concat(mBall2List, mBall3List); 

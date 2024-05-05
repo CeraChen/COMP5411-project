@@ -22,7 +22,7 @@ export class Ball {
     }    
 
     update_v_by_acceleration() {
-        this.v.z += this.a*constraints.T;
+        this.v.y += this.a*constraints.T;
     }
 
     update_pos() {
