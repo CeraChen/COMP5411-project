@@ -101,6 +101,11 @@ var setBtn = document.getElementById("set");
 var runBtn = document.getElementById("run");
 runBtn.disabled = true;
 
+
+var mergeCounter = document.getElementById("mergeCnt");
+var bounceCounter = document.getElementById("bounceCnt");
+var ratioCounter = document.getElementById("ratioVal");
+
 setBtn.onclick = function() {
     hasInitialized = !hasInitialized;
     runBtn.disabled = !hasInitialized;
@@ -115,6 +120,15 @@ runBtn.onclick = function() {
     isSimulating = !isSimulating;
     setBtn.disabled = isSimulating;
     runBtn.textContent = (isSimulating)? "Pause" : "Run";
+
+    if (isSimulating) {
+        bounceCnt = 0;
+        mergeCnt = 0;
+
+        mergeCounter.textContent = String(mergeCnt);  
+        bounceCounter.textContent = String(bounceCnt);  
+        ratioCounter.textContent = "-";      
+    }
 };
 
 function createGUI() {
@@ -269,6 +283,7 @@ planeMesh.rotation.x = Math.PI * -0.5;
 scene.add(planeMesh);
 
 var renderer = new THREE.WebGLRenderer();
+renderer.shadowMap.enabled = true;
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
 container.appendChild(renderer.domElement);
@@ -280,6 +295,10 @@ var mBall1List = [];
 var mBall2List = [];
 var mBall3List = [];
 var mBallList = [];
+
+// count
+var mergeCnt = 0;
+var bounceCnt = 0;
 
 
 // mainLoop
@@ -323,7 +342,102 @@ function mainLoop() {
                 }
             }
 
-            if (isDirty) {
+            if (isDirty) { 
+                for (var i=0; i<mMergeGroupList.length; i++) {
+                    var dice = Math.random();
+                    if (dice < constraints.MERGING_PROB || mMergeGroupList[i].length > 2) {  
+                        mergeCnt += 1;
+                        mergeCounter.textContent = String(mergeCnt);                       
+                        ratioCounter.textContent = String((mergeCnt/(bounceCnt+mergeCnt)).toFixed(3));
+                        
+                        var mass = 0;
+                        var density = 0;
+                        var momentum = [0, 0, 0];
+                        var rgb = [0, 0, 0];
+
+                        var x = 0;
+                        var y = 0;
+                        var z = 0;
+
+                        for (var j=0; j<mMergeGroupList[i].length; j++) {
+                            mass += mMergeGroupList[i][j].m;
+                            density += mMergeGroupList[i][j].den;
+
+                            momentum[0] += mMergeGroupList[i][j].m*mMergeGroupList[i][j].v.x;
+                            momentum[1] += mMergeGroupList[i][j].m*mMergeGroupList[i][j].v.y;
+                            momentum[2] += mMergeGroupList[i][j].m*mMergeGroupList[i][j].v.z;
+
+                            x += mMergeGroupList[i][j].pos.x;
+                            y += mMergeGroupList[i][j].pos.y;
+                            z += mMergeGroupList[i][j].pos.z;
+
+                            rgb[0] += mMergeGroupList[i][j].color[0];
+                            rgb[1] += mMergeGroupList[i][j].color[1];
+                            rgb[2] += mMergeGroupList[i][j].color[2];
+                        }
+
+                        density /= mMergeGroupList[i].length;
+                        const radius = Math.floor(Math.pow(mass/density, 1/3)*10)/10;
+                        
+                        x /= mMergeGroupList[i].length;
+                        y /= mMergeGroupList[i].length;
+                        z /= mMergeGroupList[i].length;
+                        const position = {x, y, z};
+
+                        const velocity = {x: momentum[0]/mass, y: momentum[1]/mass, z: momentum[2]/mass};
+                        const color = [rgb[0]/mMergeGroupList[i].length*controls.diffuseScaler, 
+                                        rgb[1]/mMergeGroupList[i].length*controls.diffuseScaler,
+                                        rgb[2]/mMergeGroupList[i].length*controls.diffuseScaler];
+
+
+                        // const mass = sum(m);
+                        // const position = average();
+                        // const density = average();
+                        // const r = Math.floor(Math.pow(mass/density, 1/3)*10)/10; // %0.1
+
+                        // const velocity = momentumConversed();
+                        // const color = average()(weight m);
+
+                        const geometry = new THREE.SphereGeometry(radius, constraints.BALL_SEGMENTS, constraints.BALL_SEGMENTS);
+                        const material = new THREE.MeshPhongMaterial({ color: rgb2hex(color)}); 
+                        const item = new THREE.Mesh(geometry, material);
+                        item.position.set(position.x, position.y, position.z);
+                        scene.add(item);
+
+                        const ball = new Ball(item, position, velocity, radius, density, color);
+                        mBallList.push(ball);
+                    }
+                    else {    
+                        bounceCnt += 1;
+                        bounceCounter.textContent = String(bounceCnt);
+                        ratioCounter.textContent = String((mergeCnt/(bounceCnt+mergeCnt)).toFixed(3));
+
+                        for (var j=0; j<mMergeGroupList[i].length; j++) {
+                            mMergeGroupList[i][j].merged = false;
+                        }
+                        const momentum = {
+                            x: mMergeGroupList[i][0].v.x*mMergeGroupList[i][0].m + mMergeGroupList[i][1].v.x*mMergeGroupList[i][1].m,
+                            y: mMergeGroupList[i][0].v.y*mMergeGroupList[i][0].m + mMergeGroupList[i][1].v.y*mMergeGroupList[i][1].m,
+                            z: mMergeGroupList[i][0].v.z*mMergeGroupList[i][0].m + mMergeGroupList[i][1].v.z*mMergeGroupList[i][1].m
+                        }
+                        const v_extra = randomV(0.3);
+                        const v_0 = {
+                            x: -1*Math.sign(mMergeGroupList[i][0].v.x)*(v_extra.x + ((momentum.x*mMergeGroupList[i][0].v.x < 0)? (Math.abs(momentum.x)/mMergeGroupList[i][0].m) : 0)),
+                            y: -1*Math.sign(mMergeGroupList[i][0].v.y)*(v_extra.y + ((momentum.y*mMergeGroupList[i][0].v.y < 0)? (Math.abs(momentum.y)/mMergeGroupList[i][0].m) : 0)),
+                            z: -1*Math.sign(mMergeGroupList[i][0].v.z)*(v_extra.z + ((momentum.z*mMergeGroupList[i][0].v.z < 0)? (Math.abs(momentum.z)/mMergeGroupList[i][0].m) : 0))
+                        };
+                        const v_1 = {
+                            x: -1*Math.sign(mMergeGroupList[i][1].v.x)*(v_extra.x + ((momentum.x*mMergeGroupList[i][1].v.x < 0)? (Math.abs(momentum.x)/mMergeGroupList[i][1].m) : 0)),
+                            y: -1*Math.sign(mMergeGroupList[i][1].v.y)*(v_extra.y + ((momentum.y*mMergeGroupList[i][1].v.y < 0)? (Math.abs(momentum.y)/mMergeGroupList[i][1].m) : 0)),
+                            z: -1*Math.sign(mMergeGroupList[i][1].v.z)*(v_extra.z + ((momentum.z*mMergeGroupList[i][1].v.z < 0)? (Math.abs(momentum.z)/mMergeGroupList[i][1].m) : 0))
+                        };
+                        mMergeGroupList[i][0].v = v_0;
+                        mMergeGroupList[i][1].v = v_1;
+                    }
+
+                }
+
+
                 var tmpList = [];
                 for (var i=0; i<mBallList.length; i++) {
                     if (mBallList[i].merged) {
@@ -334,65 +448,7 @@ function mainLoop() {
                     }
                 }
                 mBallList = tmpList;
-
-                for (var i=0; i<mMergeGroupList.length; i++) {
-                    var mass = 0;
-                    var density = 0;
-                    var momentum = [0, 0, 0];
-                    var rgb = [0, 0, 0];
-
-                    var x = 0;
-                    var y = 0;
-                    var z = 0;
-
-                    for (var j=0; j<mMergeGroupList[i].length; j++) {
-                        mass += mMergeGroupList[i][j].m;
-                        density += mMergeGroupList[i][j].den;
-
-                        momentum[0] += mMergeGroupList[i][j].m*mMergeGroupList[i][j].v.x;
-                        momentum[1] += mMergeGroupList[i][j].m*mMergeGroupList[i][j].v.y;
-                        momentum[2] += mMergeGroupList[i][j].m*mMergeGroupList[i][j].v.z;
-
-                        x += mMergeGroupList[i][j].pos.x;
-                        y += mMergeGroupList[i][j].pos.y;
-                        z += mMergeGroupList[i][j].pos.z;
-
-                        rgb[0] += mMergeGroupList[i][j].color[0];
-                        rgb[1] += mMergeGroupList[i][j].color[1];
-                        rgb[2] += mMergeGroupList[i][j].color[2];
-                    }
-
-                    density /= mMergeGroupList[i].length;
-                    const radius = Math.floor(Math.pow(mass/density, 1/3)*10)/10;
-                    
-                    x /= mMergeGroupList[i].length;
-                    y /= mMergeGroupList[i].length;
-                    z /= mMergeGroupList[i].length;
-                    const position = {x, y, z};
-
-                    const velocity = {x: momentum[0]/mass, y: momentum[1]/mass, z: momentum[2]/mass};
-                    const color = [rgb[0]/mMergeGroupList[i].length*controls.diffuseScaler, 
-                                    rgb[1]/mMergeGroupList[i].length*controls.diffuseScaler,
-                                    rgb[2]/mMergeGroupList[i].length*controls.diffuseScaler];
-
-
-                    // const mass = sum(m);
-                    // const position = average();
-                    // const density = average();
-                    // const r = Math.floor(Math.pow(mass/density, 1/3)*10)/10; // %0.1
-
-                    // const velocity = momentumConversed();
-                    // const color = average()(weight m);
-
-                    const geometry = new THREE.SphereGeometry(radius, constraints.BALL_SEGMENTS, constraints.BALL_SEGMENTS);
-                    const material = new THREE.MeshPhongMaterial({ color: rgb2hex(color)}); 
-                    const item = new THREE.Mesh(geometry, material);
-                    item.position.set(position.x, position.y, position.z);
-                    scene.add(item);
-
-                    const ball = new Ball(item, position, velocity, radius, density, color);
-                    mBallList.push(ball);
-                }
+                isDirty = false;
             }
         }
     }
@@ -491,10 +547,10 @@ function randomPos(radius) {
     return { x, y, z };
 }
 
-function randomV() {
-    const x = Math.random()*constraints.MAX_VELOCITY;
-    const y = Math.random()*constraints.MAX_VELOCITY;
-    const z = Math.random()*constraints.MAX_VELOCITY;
+function randomV(scaler=1) {
+    const x = Math.random()*constraints.MAX_VELOCITY*scaler;
+    const y = Math.random()*constraints.MAX_VELOCITY*scaler;
+    const z = Math.random()*constraints.MAX_VELOCITY*scaler;
     return { x, y, z };
 }
 

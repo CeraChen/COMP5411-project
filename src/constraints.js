@@ -8,6 +8,7 @@ export const CONTAINER_OPACITY = 0.2;
 export const MAX_VELOCITY = 40;
 export const GRAVITY_ACCELERATION = -10.0; // z
 export const T = 0.025;
+export const MERGING_PROB = 0.5;
 
 // rendering
 export const BALL_SEGMENTS = 36;
