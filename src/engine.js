@@ -5,6 +5,7 @@ import * as constraints from "./constraints.js";
 
 // GUI 
 var controls = new function(){
+    // properties
     this.hasUpdated = true; // set false when new balls are added in gui but not renderer in the scene
     this.colorUpdateQueue = [];
     this.posUpdateQueue = [];
@@ -13,17 +14,17 @@ var controls = new function(){
     // this.simulatorStatus = "start";
 
     this.ball1Num = 0;
-    this.ball1Radius = 1;
+    this.ball1Radius = 2;
     this.ball1Density = 1;
     this.ball1Color = [255, 255, 255];
     
     this.ball2Num = 0;
-    this.ball2Radius = 1;
+    this.ball2Radius = 2;
     this.ball2Density = 1;
     this.ball2Color = [255, 255, 255];
 
     this.ball3Num = 0;
-    this.ball3Radius = 1;
+    this.ball3Radius = 2;
     this.ball3Density = 1;
     this.ball3Color = [255, 255, 255];
 
@@ -47,6 +48,40 @@ var controls = new function(){
         this.colorUpdateQueue = [];
         this.posUpdateQueue = [];
     };
+
+
+    // lighting
+    this.lightingUpdated = true;
+
+    this.ambientLightColor = [255, 255, 255];
+    // this.ambientLightIntensity = 1;
+
+    this.pointLightColor = [255, 255, 255];
+    this.pointLightIntensity = 1;
+
+
+    // phong model
+    this.lightingModelChanged = false;
+
+    this.ambientChanged = false;
+    this.ambientScaler = 0.5;
+    
+    this.diffuseChanged = false;
+    this.diffuseScaler = 1;
+    
+    this.specularChanged = false;
+    this.specularScaler = 0; 
+
+    this.shininessChanged = false;
+    this.shininessScaler = 1;
+    
+    this.hasUpdatedPhongModel = function() {
+        this.lightingModelChanged = false;
+        this.ambientChanged = false;
+        this.diffuseChanged = false;
+        this.specularChanged = false;        
+        this.shininessChanged = false;
+    };
 }
 
 
@@ -56,11 +91,16 @@ var isDirty = false; // has merged
 
 var setBtn = document.getElementById("set");
 var runBtn = document.getElementById("run");
+runBtn.disabled = true;
 
 setBtn.onclick = function() {
     hasInitialized = !hasInitialized;
     runBtn.disabled = !hasInitialized;
     setBtn.textContent = (hasInitialized)? "Reset" : "Set";
+    if (!hasInitialized) {
+        removeBalls(mBallList);
+        mBallList.length = 0;
+    }
 };
 
 runBtn.onclick = function() {
@@ -72,7 +112,7 @@ runBtn.onclick = function() {
 function createGUI() {
     const gui = new dat.gui.GUI();
     const initialization = gui.addFolder('Balls properties'); // support adding up to three different balls
-    const simulation = gui.addFolder('Balls motion');
+    const lighting = gui.addFolder('Light properties');
 
     const ball1 = initialization.addFolder("Ball 1");
     ball1.add(controls, "ball1Num", 0, 100).step(1).name("Quantity").onChange(function() {
@@ -124,6 +164,49 @@ function createGUI() {
     // initialization.add(controls, "initializationStatus", ["yes", "no"]).name("Confirm").onChange(onInitialized);
     // simulation.add(controls, "simulatorStatus", ["stop", "start"]).name("Simulator");//.onChange(controls.updateSimulatorStatus);
 
+    const phongModel = lighting.addFolder("Phong model");
+    phongModel.add(controls, "ambientScaler", 0, 1).name("Ambient").onChange(function() {
+        controls.ambientChanged = true;
+        controls.lightingModelChanged = true;
+    });
+
+    phongModel.add(controls, "diffuseScaler", 0, 1).name("Diffuse").onChange(function() {
+        controls.diffuseChanged = true;
+        controls.lightingModelChanged = true;
+    });
+    
+    phongModel.add(controls, "specularScaler", 0, 1).name("Specular").onChange(function() {
+        controls.specularChanged = true;
+        controls.lightingModelChanged = true;
+    });
+
+    phongModel.add(controls, "shininessScaler", 0, 1000).name("Shininess").onChange(function() {
+        controls.shininessChanged = true;
+        controls.lightingModelChanged = true;
+    });
+
+    
+    const lightControl = lighting.addFolder("Lights");
+
+    const ambientLightControl = lightControl.addFolder("Ambient light");
+    ambientLightControl.addColor(controls, "ambientLightColor").name("Color").onChange(function() {
+        controls.ambientChanged = true;
+        controls.lightingModelChanged = true;
+        controls.lightingUpdated = false;
+    })
+    // ambientLightControl.add(controls, "ambientLightIntensity", 0, 10).name("Intensity").onChange(function() {
+    //     controls.lightingUpdated = false;
+    // })
+
+    const pointLightControl = lightControl.addFolder("Point light");
+    pointLightControl.addColor(controls, "pointLightColor").name("Color").onChange(function() {
+        controls.specularChanged = true;
+        controls.lightingModelChanged = true;
+        controls.lightingUpdated = false;
+    })
+    pointLightControl.add(controls, "pointLightIntensity", 0, 10).name("Intensity").onChange(function() {
+        controls.lightingUpdated = false;
+    })
 }
 createGUI();
 
@@ -150,22 +233,21 @@ cameraControls.target.set(0, 0, 0);
 // var directlight = new THREE.DirectionalLight(0xffffff, 1);
 // scene.add(directlight);
 
-var ambientLight = new THREE.AmbientLight(0xffffff, 1);
-scene.add(ambientLight);
+var mAmbientLight = new THREE.AmbientLight(0xffffff, 1);
+scene.add(mAmbientLight);
 
-var pointLight = new THREE.PointLight(0xffffff);
-pointLight.position.set(0.8*constraints.CONTAINER_LENGTH, 0.8*constraints.CONTAINER_WIDTH, 0.8*constraints.CONTAINER_HEIGHT);
-pointLight.intensity = 1;
-scene.add(pointLight);
+var mPointLight = new THREE.PointLight(0xffffff, 1);
+mPointLight.position.set(0.8*constraints.CONTAINER_LENGTH, 0.8*constraints.CONTAINER_WIDTH, 0.8*constraints.CONTAINER_HEIGHT);
+scene.add(mPointLight);
 
 var sphereGeometry = new THREE.SphereGeometry(3, constraints.BALL_SEGMENTS, constraints.BALL_SEGMENTS); // 设置球体的半径和分段数
 var sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
 var lightSphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-lightSphere.position.copy(pointLight.position); // 设置球体的位置与点光源一致
+lightSphere.position.copy(mPointLight.position); // 设置球体的位置与点光源一致
 scene.add(lightSphere);
 
 var geometry = new THREE.BoxGeometry(constraints.CONTAINER_LENGTH, constraints.CONTAINER_WIDTH, constraints.CONTAINER_HEIGHT);
-var material = new THREE.MeshPhongMaterial({ color: 0xaa3366, transparent: true, opacity: 0.2 });
+var material = new THREE.MeshPhongMaterial({ color: 0xffffff, transparent: true, opacity: 0.2 });
 var cube = new THREE.Mesh(geometry, material);
 cube.position.set(0, 0, 0);
 scene.add(cube);
@@ -181,7 +263,7 @@ container.appendChild(renderer.domElement);
 var mBall1List = [];
 var mBall2List = [];
 var mBall3List = [];
-var mBallList;
+var mBallList = [];
 
 
 // mainLoop
@@ -273,9 +355,9 @@ function mainLoop() {
                     const position = {x, y, z};
 
                     const velocity = {x: momentum[0]/mass, y: momentum[1]/mass, z: momentum[2]/mass};
-                    const color = [rgb[0]/mMergeGroupList[i].length, 
-                                    rgb[1]/mMergeGroupList[i].length,
-                                    rgb[2]/mMergeGroupList[i].length];
+                    const color = [rgb[0]/mMergeGroupList[i].length*controls.diffuseScaler, 
+                                    rgb[1]/mMergeGroupList[i].length*controls.diffuseScaler,
+                                    rgb[2]/mMergeGroupList[i].length*controls.diffuseScaler];
 
 
                     // const mass = sum(m);
@@ -299,7 +381,7 @@ function mainLoop() {
         }
     }
     else {   
-        console.log("hasn't initialized");
+        // console.log("hasn't initialized");
         if (!controls.hasUpdated) {  
             // update ball props           
             var mBallInitialList = [mBall1List, mBall2List, mBall3List];    
@@ -338,7 +420,8 @@ function mainLoop() {
                     for (var idx = 0; idx < 3; idx++) {
                         if (controls.colorUpdateQueue.includes(idx+1)) {
                             for (var i=0; i<mBallInitialList[idx].length; i++) {
-                                mBallInitialList[idx][i].item.material.color.set(rgb2hex(mBallColor[idx]));
+                                var diffuseColor = [mBallColor[idx][0]*controls.diffuseScaler, mBallColor[idx][1]*controls.diffuseScaler, mBallColor[idx][2]*controls.diffuseScaler];
+                                mBallInitialList[idx][i].item.material.color.set(rgb2hex(diffuseColor));
                                 mBallInitialList[idx][i].color = mBallColor[idx];
                             }
                         }
@@ -357,6 +440,21 @@ function mainLoop() {
             }
             controls.hasUpdatedBallProps();
         }
+    }
+
+    if (!controls.lightingUpdated) {
+        mPointLight.color = new THREE.Color(rgb2hex(controls.pointLightColor));
+        mPointLight.intensity = controls.pointLightIntensity;
+
+        mAmbientLight.color = new THREE.Color(rgb2hex(controls.ambientLightColor)); // 设置点光源的颜色为红色
+        // mAmbientLight.intensity = controls.ambientLightIntensity;
+
+        controls.lightingUpdated = true;
+    }
+
+    if (controls.lightingModelChanged) {
+        updateLighting();
+        controls.hasUpdatedPhongModel();
     }
     renderer.render(scene, camera);
 }
@@ -395,6 +493,35 @@ function rgb2hex(rgb) {
         strHex += hex;
     }
     return strHex;
+}
+
+
+// Phong lighting
+function updateLighting() {
+    if (controls.ambientChanged) {
+        mAmbientLight.intensity = controls.ambientScaler;
+    }
+
+    for (var i=0; i<mBallList.length; i++) {
+        // if (controls.ambientChanged) {
+        //     var ambientColor = [controls.ambientLightColor[0]*controls.ambientScaler, controls.ambientLightColor[1]*controls.ambientScaler, controls.ambientLightColor[2]*controls.ambientScaler];
+        //     mBallList[i].item.material.ambient.set(rgb2hex(ambientColor));            
+        // }
+
+        if (controls.diffuseChanged) {
+            var diffuseColor = [mBallColor[idx][0]*controls.diffuseScaler, mBallColor[idx][1]*controls.diffuseScaler, mBallColor[idx][2]*controls.diffuseScaler];
+            mBallList[i].item.material.color.set(rgb2hex(diffuseColor));  
+        }
+        
+        if (controls.specularChanged) {
+            var specularColor = [controls.pointLightColor[0]*controls.specularScaler, controls.pointLightColor[1]*controls.specularScaler, controls.pointLightColor[2]*controls.specularScaler];
+            mBallList[i].item.material.specular.set(rgb2hex(specularColor));  
+        }
+
+        if (controls.shininessChanged) {
+            mBallList[i].item.material.shininess = controls.shininessScaler;  
+        }
+    }
 }
 
 mainLoop();
