@@ -8,7 +8,9 @@ export class Ball {
       this.a = constraints.GRAVITY_ACCELERATION;
       this.r = radius;
       this.m = density*radius**3;
+      this.den = density;
       this.color = color;
+      this.merged = false;
     }
 
     
@@ -50,6 +52,12 @@ export class Ball {
                 this.pos.z -= Math.sign(this.pos.z)*z_dis;
             }
         }
-    }    
+    }
+    
+
+    collision_check(pos, r) {
+        const sqrtDist = (this.pos.x - pos.x)**2 + (this.pos.y - pos.y)**2 + (this.pos.z - pos.z)**2;
+        return sqrtDist <= (this.r + r)**2;
+    }
 
 }

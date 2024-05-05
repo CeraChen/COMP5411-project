@@ -52,6 +52,7 @@ var controls = new function(){
 
 var hasInitialized = false;
 var isSimulating = false; // enable only after initialization, set true when balls start to move
+var isDirty = false; // has merged
 
 var setBtn = document.getElementById("set");
 var runBtn = document.getElementById("run");
@@ -180,6 +181,7 @@ container.appendChild(renderer.domElement);
 var mBall1List = [];
 var mBall2List = [];
 var mBall3List = [];
+var mBallList;
 
 
 // mainLoop
@@ -190,13 +192,110 @@ function mainLoop() {
         if (isSimulating) {
             // console.log("is simulating");
             // update ball motion 
-            var mBallSimulatedList = mBall1List.concat(mBall2List, mBall3List); 
-            for (var i=0; i<mBallSimulatedList.length; i++) {
-                mBallSimulatedList[i].update_v_by_acceleration();
-                mBallSimulatedList[i].update_v_if_reflected();
-                mBallSimulatedList[i].update_pos();
+             
+            for (var i=0; i<mBallList.length; i++) {
+                mBallList[i].update_v_by_acceleration();
+                mBallList[i].update_pos();
+                mBallList[i].update_v_if_reflected();
             }
 
+            var mMergeGroupList = [];
+            for (var i=0; i<mBallList.length; i++) {
+                if (!mBallList[i].merged) {
+                    var curMergeGroup = [];
+                    
+                    for (var j=i+1; j<mBallList.length; j++) {
+                        if (mBallList[i].collision_check(mBallList[j].pos, mBallList[j].r)) {
+                            
+                            if (!mBallList[i].merged) {
+                                mBallList[i].merged= true;
+                                curMergeGroup.push(mBallList[i]);
+                            }
+
+                            mBallList[j].merged = true;
+                            curMergeGroup.push(mBallList[j]);
+                        }
+                    }
+
+                    if (curMergeGroup.length > 0) {
+                        mMergeGroupList.push(curMergeGroup);
+                    }
+
+                    isDirty = mMergeGroupList.length > 0;
+                }
+            }
+
+            if (isDirty) {
+                var tmpList = [];
+                for (var i=0; i<mBallList.length; i++) {
+                    if (mBallList[i].merged) {
+                        scene.remove(mBallList[i].item);
+                    }
+                    else {
+                        tmpList.push(mBallList[i]);
+                    }
+                }
+                mBallList = tmpList;
+
+                for (var i=0; i<mMergeGroupList.length; i++) {
+                    var mass = 0;
+                    var density = 0;
+                    var momentum = [0, 0, 0];
+                    var rgb = [0, 0, 0];
+
+                    var x = 0;
+                    var y = 0;
+                    var z = 0;
+
+                    for (var j=0; j<mMergeGroupList[i].length; j++) {
+                        mass += mMergeGroupList[i][j].m;
+                        density += mMergeGroupList[i][j].den;
+
+                        momentum[0] += mMergeGroupList[i][j].m*mMergeGroupList[i][j].v.x;
+                        momentum[1] += mMergeGroupList[i][j].m*mMergeGroupList[i][j].v.y;
+                        momentum[2] += mMergeGroupList[i][j].m*mMergeGroupList[i][j].v.z;
+
+                        x += mMergeGroupList[i][j].pos.x;
+                        y += mMergeGroupList[i][j].pos.y;
+                        z += mMergeGroupList[i][j].pos.z;
+
+                        rgb[0] += mMergeGroupList[i][j].color[0];
+                        rgb[1] += mMergeGroupList[i][j].color[1];
+                        rgb[2] += mMergeGroupList[i][j].color[2];
+                    }
+
+                    density /= mMergeGroupList[i].length;
+                    const radius = Math.floor(Math.pow(mass/density, 1/3)*10)/10;
+                    
+                    x /= mMergeGroupList[i].length;
+                    y /= mMergeGroupList[i].length;
+                    z /= mMergeGroupList[i].length;
+                    const position = {x, y, z};
+
+                    const velocity = {x: momentum[0]/mass, y: momentum[1]/mass, z: momentum[2]/mass};
+                    const color = [rgb[0]/mMergeGroupList[i].length, 
+                                    rgb[1]/mMergeGroupList[i].length,
+                                    rgb[2]/mMergeGroupList[i].length];
+
+
+                    // const mass = sum(m);
+                    // const position = average();
+                    // const density = average();
+                    // const r = Math.floor(Math.pow(mass/density, 1/3)*10)/10; // %0.1
+
+                    // const velocity = momentumConversed();
+                    // const color = average()(weight m);
+
+                    const geometry = new THREE.SphereGeometry(radius, constraints.BALL_SEGMENTS, constraints.BALL_SEGMENTS);
+                    const material = new THREE.MeshPhongMaterial({ color: rgb2hex(color)}); 
+                    const item = new THREE.Mesh(geometry, material);
+                    item.position.set(position.x, position.y, position.z);
+                    scene.add(item);
+
+                    const ball = new Ball(item, position, velocity, radius, density, color);
+                    mBallList.push(ball);
+                }
+            }
         }
     }
     else {   
@@ -209,7 +308,7 @@ function mainLoop() {
             var mBallColor = [controls.ball1Color, controls.ball2Color, controls.ball3Color];
             var mBallDensity = [controls.ball1Density, controls.ball2Density, controls.ball3Density];
 
-            if (controls.posUpdateQueue.length > 0) {
+            if (controls.posUpdateQueue.length > 0 || isDirty) {
                 for (var idx = 0; idx < 3; idx++) {
                     if (controls.posUpdateQueue.includes(idx+1)) {
                         removeBalls(mBallInitialList[idx]);
@@ -232,6 +331,7 @@ function mainLoop() {
                         
                     }
                 }
+                mBallList = mBall1List.concat(mBall2List, mBall3List);
             }
             else {
                 if (controls.colorUpdateQueue.length > 0) {                    
@@ -239,6 +339,7 @@ function mainLoop() {
                         if (controls.colorUpdateQueue.includes(idx+1)) {
                             for (var i=0; i<mBallInitialList[idx].length; i++) {
                                 mBallInitialList[idx][i].item.material.color.set(rgb2hex(mBallColor[idx]));
+                                mBallInitialList[idx][i].color = mBallColor[idx];
                             }
                         }
                     }
@@ -247,7 +348,8 @@ function mainLoop() {
                     for (var idx = 0; idx < 3; idx++) {
                         if (mBallNum[idx] > 0) {
                             for (var i=0; i<mBallInitialList[idx].length; i++) {
-                                mBallInitialList[idx][i].m = mBallDensity[idx];
+                                mBallInitialList[idx][i].den = mBallDensity[idx];                                
+                                mBallInitialList[idx][i].m = mBallInitialList[idx][i].den*mBallInitialList[idx][i].r**3;
                             }
                         }
                     }
