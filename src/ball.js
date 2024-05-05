@@ -34,23 +34,32 @@ export class Ball {
 
         if (x_dis < this.r) {
             this.v.x *= -1;
-            if (x_dis < 0) {
-                this.pos.x -= Math.sign(this.pos.x)*x_dis;
-            }
+            // if (x_dis < 0) {
+            this.pos.x -= Math.sign(this.pos.x)*Math.abs(this.r-x_dis);
+            // }
+            // else{
+            //     this.pos.x = Math.sign(this.pos.x)*constraints.CONTAINER_LENGTH/2;
+            // }
         }
         
         if (y_dis < this.r) {
             this.v.y *= -1;
-            if (y_dis < 0) {
-                this.pos.y -= Math.sign(this.pos.y)*y_dis;
-            }
+            // if (y_dis < 0) {
+            this.pos.y -= Math.sign(this.pos.y)*Math.abs(this.r-y_dis);
+            // }
+            // else{
+            //     this.pos.y = Math.sign(this.pos.y)*constraints.CONTAINER_WIDTH/2;
+            // }
         }
         
         if (z_dis < this.r) {
             this.v.z *= -1;
-            if (z_dis < 0) {
-                this.pos.z -= Math.sign(this.pos.z)*z_dis;
-            }
+            // if (z_dis < 0) {
+            this.pos.z -= Math.sign(this.pos.z)*Math.abs(this.r-z_dis);
+            // }
+            // else{
+            //     this.pos.z = Math.sign(this.pos.z)*constraints.CONTAINER_HEIGHT/2;
+            // }
         }
     }
     
