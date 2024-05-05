@@ -128,7 +128,7 @@ var container = document.getElementById("container");
 var scene = new THREE.Scene();
 
 var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1e-2, 1000);
-camera.position.x = constraints.CONTAINER_LENGTH*2;
+camera.position.x = constraints.CONTAINER_LENGTH*2.2;
 camera.position.y = 0;
 camera.position.z = 0;
 
@@ -141,19 +141,25 @@ cameraControls.zoomSpeed = 1.0;
 cameraControls.panSpeed = 0.8;
 cameraControls.target.set(0, 0, 0);
 
-var directlight = new THREE.DirectionalLight(0xffffff, 200);
-scene.add(directlight);
+// var directlight = new THREE.DirectionalLight(0xffffff, 1);
+// scene.add(directlight);
 
-var ambientLight = new THREE.AmbientLight(0xffffff, 100);
+var ambientLight = new THREE.AmbientLight(0xffffff, 1);
 scene.add(ambientLight);
 
 var pointLight = new THREE.PointLight(0xffffff);
-pointLight.position.set(-2*constraints.CONTAINER_LENGTH, -2*constraints.CONTAINER_WIDTH, 2*constraints.CONTAINER_HEIGHT);
-pointLight.intensity = 1000;
+pointLight.position.set(0.8*constraints.CONTAINER_LENGTH, 0.8*constraints.CONTAINER_WIDTH, 0.8*constraints.CONTAINER_HEIGHT);
+pointLight.intensity = 1;
 scene.add(pointLight);
 
+var sphereGeometry = new THREE.SphereGeometry(3, constraints.BALL_SEGMENTS, constraints.BALL_SEGMENTS); // 设置球体的半径和分段数
+var sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+var lightSphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+lightSphere.position.copy(pointLight.position); // 设置球体的位置与点光源一致
+scene.add(lightSphere);
+
 var geometry = new THREE.BoxGeometry(constraints.CONTAINER_LENGTH, constraints.CONTAINER_WIDTH, constraints.CONTAINER_HEIGHT);
-var material = new THREE.MeshPhongMaterial({ color: 0xaa3366, transparent: true, opacity: 0.1 });
+var material = new THREE.MeshPhongMaterial({ color: 0xaa3366, transparent: true, opacity: 0.2 });
 var cube = new THREE.Mesh(geometry, material);
 cube.position.set(0, 0, 0);
 scene.add(cube);
