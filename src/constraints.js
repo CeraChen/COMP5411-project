@@ -2,6 +2,7 @@
 export const CONTAINER_LENGTH = 100;
 export const CONTAINER_WIDTH = 100;
 export const CONTAINER_HEIGHT = 100;
+export const CONTAINER_OPACITY = 0.2;
 
 // motion
 export const MAX_VELOCITY = 40;

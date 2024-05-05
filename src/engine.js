@@ -212,7 +212,7 @@ function createGUI() {
         controls.lightingModelChanged = true;
         controls.lightingUpdated = false;
     })
-    pointLightControl.add(controls, "pointLightIntensity", 0, 10).name("Intensity").onChange(function() {
+    pointLightControl.add(controls, "pointLightIntensity", 0, 5).name("Intensity").onChange(function() {
         controls.lightingUpdated = false;
     })
 }
@@ -241,7 +241,7 @@ cameraControls.target.set(0, 0, 0);
 // var directlight = new THREE.DirectionalLight(0xffffff, 1);
 // scene.add(directlight);
 
-var mAmbientLight = new THREE.AmbientLight(0xffffff, 1);
+var mAmbientLight = new THREE.AmbientLight(0xffffff, controls.ambientScaler);
 scene.add(mAmbientLight);
 
 var mPointLight = new THREE.PointLight(0xffffff, 1);
@@ -255,7 +255,7 @@ lightCube.position.copy(mPointLight.position);
 scene.add(lightCube);
 
 var geometry = new THREE.BoxGeometry(constraints.CONTAINER_LENGTH, constraints.CONTAINER_WIDTH, constraints.CONTAINER_HEIGHT);
-var material = new THREE.MeshPhongMaterial({ color: 0xffffff, transparent: true, opacity: 0.2 });
+var material = new THREE.MeshPhongMaterial({ color: 0xffffff, transparent: true, opacity: constraints.CONTAINER_OPACITY });
 var cube = new THREE.Mesh(geometry, material);
 cube.position.set(0, 0, 0);
 scene.add(cube);
@@ -466,6 +466,7 @@ function mainLoop() {
         updateLighting();
         controls.hasUpdatedPhongModel();
     }
+
     renderer.render(scene, camera);
 }
 
