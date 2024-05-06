@@ -138,7 +138,7 @@ function createGUI() {
     const initialization = gui.addFolder('Balls properties'); // support adding up to three different balls
     const lighting = gui.addFolder('Light properties');
 
-    initialization.add(controls, "mergeProb", 0, 1).name("Merging probability");
+    initialization.add(controls, "mergeProb", 0, 1).name("Merge prob");
 
     const ball1 = initialization.addFolder("Ball 1");
     ball1.add(controls, "ball1Num", 0, 100).step(1).name("Quantity").onChange(function() {
@@ -196,12 +196,12 @@ function createGUI() {
         controls.lightingModelChanged = true;
     });
 
-    phongModel.add(controls, "diffuseScaler", 0, 1).name("Diffuse").onChange(function() {
+    phongModel.add(controls, "diffuseScaler", 0, 1.0).name("Diffuse").onChange(function() {
         controls.diffuseChanged = true;
         controls.lightingModelChanged = true;
     });
     
-    phongModel.add(controls, "specularScaler", 0, 1).name("Specular").onChange(function() {
+    phongModel.add(controls, "specularScaler", 0, 1.0).name("Specular").onChange(function() {
         controls.specularChanged = true;
         controls.lightingModelChanged = true;
     });
