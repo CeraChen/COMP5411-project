@@ -425,15 +425,20 @@ function mainLoop() {
                             z: mMergeGroupList[i][0].v.z*mMergeGroupList[i][0].m + mMergeGroupList[i][1].v.z*mMergeGroupList[i][1].m
                         }
                         const v_extra = randomV(0.3);
+                        const v_same_dir = {
+                            x: Math.sign(mMergeGroupList[i][0].v.x) == Math.sign(mMergeGroupList[i][1].v.x),
+                            y: Math.sign(mMergeGroupList[i][0].v.y) == Math.sign(mMergeGroupList[i][1].v.y),
+                            z: Math.sign(mMergeGroupList[i][0].v.z) == Math.sign(mMergeGroupList[i][1].v.z),
+                        }
                         const v_0 = {
-                            x: -1*Math.sign(mMergeGroupList[i][0].v.x)*(v_extra.x + ((momentum.x*mMergeGroupList[i][0].v.x < 0)? (Math.abs(momentum.x)/mMergeGroupList[i][0].m) : 0)),
-                            y: -1*Math.sign(mMergeGroupList[i][0].v.y)*(v_extra.y + ((momentum.y*mMergeGroupList[i][0].v.y < 0)? (Math.abs(momentum.y)/mMergeGroupList[i][0].m) : 0)),
-                            z: -1*Math.sign(mMergeGroupList[i][0].v.z)*(v_extra.z + ((momentum.z*mMergeGroupList[i][0].v.z < 0)? (Math.abs(momentum.z)/mMergeGroupList[i][0].m) : 0))
+                            x: (v_same_dir.x)? mMergeGroupList[i][0].v.x : (-1*Math.sign(mMergeGroupList[i][0].v.x)*(v_extra.x + ((momentum.x*mMergeGroupList[i][0].v.x < 0)? (Math.abs(momentum.x)/mMergeGroupList[i][0].m) : 0))),
+                            y: (v_same_dir.y)? mMergeGroupList[i][0].v.y : (-1*Math.sign(mMergeGroupList[i][0].v.y)*(v_extra.y + ((momentum.y*mMergeGroupList[i][0].v.y < 0)? (Math.abs(momentum.y)/mMergeGroupList[i][0].m) : 0))),
+                            z: (v_same_dir.z)? mMergeGroupList[i][0].v.z : (-1*Math.sign(mMergeGroupList[i][0].v.z)*(v_extra.z + ((momentum.z*mMergeGroupList[i][0].v.z < 0)? (Math.abs(momentum.z)/mMergeGroupList[i][0].m) : 0)))
                         };
                         const v_1 = {
-                            x: -1*Math.sign(mMergeGroupList[i][1].v.x)*(v_extra.x + ((momentum.x*mMergeGroupList[i][1].v.x < 0)? (Math.abs(momentum.x)/mMergeGroupList[i][1].m) : 0)),
-                            y: -1*Math.sign(mMergeGroupList[i][1].v.y)*(v_extra.y + ((momentum.y*mMergeGroupList[i][1].v.y < 0)? (Math.abs(momentum.y)/mMergeGroupList[i][1].m) : 0)),
-                            z: -1*Math.sign(mMergeGroupList[i][1].v.z)*(v_extra.z + ((momentum.z*mMergeGroupList[i][1].v.z < 0)? (Math.abs(momentum.z)/mMergeGroupList[i][1].m) : 0))
+                            x: (v_same_dir.x)? mMergeGroupList[i][1].v.x : (-1*Math.sign(mMergeGroupList[i][1].v.x)*(v_extra.x + ((momentum.x*mMergeGroupList[i][1].v.x < 0)? (Math.abs(momentum.x)/mMergeGroupList[i][1].m) : 0))),
+                            y: (v_same_dir.y)? mMergeGroupList[i][1].v.y : (-1*Math.sign(mMergeGroupList[i][1].v.y)*(v_extra.y + ((momentum.y*mMergeGroupList[i][1].v.y < 0)? (Math.abs(momentum.y)/mMergeGroupList[i][1].m) : 0))),
+                            z: (v_same_dir.z)? mMergeGroupList[i][1].v.z : (-1*Math.sign(mMergeGroupList[i][1].v.z)*(v_extra.z + ((momentum.z*mMergeGroupList[i][1].v.z < 0)? (Math.abs(momentum.z)/mMergeGroupList[i][1].m) : 0)))
                         };
                         mMergeGroupList[i][0].v = v_0;
                         mMergeGroupList[i][1].v = v_1;
