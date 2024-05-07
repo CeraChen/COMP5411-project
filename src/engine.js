@@ -112,7 +112,14 @@ setBtn.onclick = function() {
     hasInitialized = !hasInitialized;
     runBtn.disabled = !hasInitialized;
     setBtn.textContent = (hasInitialized)? "Reset" : "Set";
-    if (!hasInitialized) {
+    if (!hasInitialized) {        
+        bounceCnt = 0;
+        mergeCnt = 0;
+
+        mergeCounter.textContent = String(mergeCnt);  
+        bounceCounter.textContent = String(bounceCnt);  
+        ratioCounter.textContent = "-"; 
+
         removeBalls(mBallList);
         mBallList.length = 0;
     }
